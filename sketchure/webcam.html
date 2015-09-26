@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Sketchure</title>
+</head>
+<body>
+
+<input id="lineWidth" type="range" min="1" max="10" value="1"/>
+<input id="desaturate" type="checkbox" checked/>
+<br>
+<video id="video" width="640" height="480" autoplay></video>
+<canvas id="view" width="640" height="480"></canvas>
+<script src="cleanup.js"></script>
+
+<script>
+function $(sel){ return document.querySelector(sel); }
+window.addEventListener('DOMContentLoaded', init, false);
+
+function init(){
+	var view = $('#view').getContext('2d');
+
+	var video = $('#video');
+	var videoObject = { video: true };
+
+	var framebuffer = document.createElement('canvas');
+	framebuffer.width = 640;
+	framebuffer.height = 480;
+
+	var context = framebuffer.getContext('2d');
+
+	function handleError(error){
+		console.error("video capture error:", error);
+	}
+
+	if(navigator.getUserMedia){
+		navigator.getUserMedia(videoObject, function(stream){
+			video.src = stream;
+			video.play();
+		}, handleError);
+	}else if(navigator.webkitGetUserMedia){
+		navigator.webkitGetUserMedia(videoObject, function(stream){
+			video.src = window.URL.createObjectURL(stream);
+			video.play();
+		}, handleError);
+	}else if(navigator.mozGetUserMedia){
+		navigator.mozGetUserMedia(videoObject, function(stream){
+			video.src = window.URL.createObjectURL(stream);
+			video.play();
+		}, handleError);
+	}
+
+	video.addEventListener('play', render);
+
+	function render(){
+		if(video.paused || video.ended){ return; }
+
+		context.drawImage(video, 0, 0, 640, 480);
+		var m = context.getImageData(0, 0, 640, 480);
+		cleanup.ImageData(m, 100, parseInt($("#lineWidth").value), $("#desaturate").checked);
+		view.putImageData(m, 0, 0);
+
+		requestAnimationFrame(render);
+	}
+	requestAnimationFrame(render);
+}
+</script>
+</body>
+</html>
